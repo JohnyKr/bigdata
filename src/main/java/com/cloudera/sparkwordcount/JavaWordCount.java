@@ -96,7 +96,6 @@ public class JavaWordCount {
         }
       }
     );
-    
     System.out.println(charCounts.collect());
   }
 }
