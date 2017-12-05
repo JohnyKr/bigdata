@@ -30,7 +30,7 @@ import scala.Tuple2;
 public class JavaWordCount {
   public static void main(String[] args) {
     JavaSparkContext sc = new JavaSparkContext(new SparkConf().setAppName("Spark Count"));
-    final int threshold = Integer.parseInt(args[1]);
+//    final int threshold = Integer.parseInt(args[1]);
     
     // split each document into words
     JavaRDD<String> tokenized = sc.textFile(args[0]).flatMap(
@@ -41,61 +41,19 @@ public class JavaWordCount {
         }
       }
     );
-    
-    // count the occurrence of each word
+
     JavaPairRDD<String, Integer> counts = tokenized.mapToPair(
-      new PairFunction<String, String, Integer>() {
-        @Override
-        public Tuple2<String, Integer> call(String s) {
-          return new Tuple2<String, Integer>(s, 1);
+            new PairFunction<String, String, Integer>() {
+                public Tuple2<String, Integer> call(String x) {
+                    return new Tuple2(x, 1);
+                }
+            }
+    ).reduceByKey(new Function2<Integer, Integer, Integer>() {
+        public Integer call(Integer integer, Integer integer2) throws Exception {
+            return integer + integer2;
         }
-      }
-    ).reduceByKey(
-      new Function2<Integer, Integer, Integer>() {
-        @Override
-        public Integer call(Integer i1, Integer i2) {
-          return i1 + i2;
-        }
-      }
-    );
-    
-    // filter out words with less than threshold occurrences
-    JavaPairRDD<String, Integer> filtered = counts.filter(
-      new Function<Tuple2<String, Integer>, Boolean>() {
-        @Override
-        public Boolean call(Tuple2<String, Integer> tup) {
-          return tup._2() >= threshold;
-        }
-      }
-    );
-    
-    // count characters
-    JavaPairRDD<Character, Integer> charCounts = filtered.flatMap(
-      new FlatMapFunction<Tuple2<String, Integer>, Character>() {
-        @Override
-        public Iterable<Character> call(Tuple2<String, Integer> s) {
-          Collection<Character> chars = new ArrayList<Character>(s._1().length());
-          for (char c : s._1().toCharArray()) {
-            chars.add(c);
-          }
-          return chars;
-        }
-      }
-    ).mapToPair(
-      new PairFunction<Character, Character, Integer>() {
-        @Override
-        public Tuple2<Character, Integer> call(Character c) {
-          return new Tuple2<Character, Integer>(c, 1);
-        }
-      }
-    ).reduceByKey(
-      new Function2<Integer, Integer, Integer>() {
-        @Override
-        public Integer call(Integer i1, Integer i2) {
-          return i1 + i2;
-        }
-      }
-    );
-    System.out.println(charCounts.collect());
+    });
+
+    System.out.println(counts.collect());
   }
 }
